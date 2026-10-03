@@ -35,12 +35,12 @@ body.dark{--bg:#0b1220;--card:#111827;--text:#f3f4f6;--muted:#9ca3af;--border:#2
 <main class="content">
 <section id="page-home">
  <div class="card">
-  <div class="row"><div class="muted">总资产 · 折算人民币</div><button class="secondary" onclick="openSettings()">⚙️</button></div>
+  <div class="row"><div class="muted">总资产 · 折算人民币</div><div style="display:flex;gap:7px"><button class="secondary" onclick="manualRefresh()">↻</button><button class="secondary" onclick="openSettings()">⚙️</button></div></div>
   <div class="balance" id="totalCny">¥0.00</div>
   <div class="grid"><div class="mini"><span>🇨🇳 人民币</span><b id="cnyTotal">¥0.00</b></div><div class="mini"><span>🇷🇺 卢布</span><b id="rubTotal">₽0.00</b></div></div>
  </div>
  <div class="card"><div class="row"><div class="section-title">本月概览</div><span class="subtle" id="monthLabel"></span></div>
-  <div class="grid3"><div class="mini"><span class="muted">收入</span><b class="plus" id="homeIncome">¥0</b></div><div class="mini"><span class="muted">支出</span><b class="minus" id="homeExpense">¥0</b></div><div class="mini"><span class="muted">结余</span><b id="homeNet">¥0</b></div></div>
+  <div class="grid3"><div class="mini"><span class="muted">收入</span><b class="plus" id="homeIncome">¥0</b><small class="muted" id="homeIncomeNative">—</small></div><div class="mini"><span class="muted">支出</span><b class="minus" id="homeExpense">¥0</b><small class="muted" id="homeExpenseNative">—</small></div><div class="mini"><span class="muted">结余</span><b id="homeNet">¥0</b><small class="muted">按人民币折算</small></div></div>
   <div style="margin-top:13px"><div class="row"><span class="muted">本月预算</span><span id="budgetText" class="muted">未设置</span></div><div class="progress" style="margin-top:7px"><i id="budgetBar" style="width:0%"></i></div><div class="updated" id="homeUpdated"><span class="live-dot"></span>刚刚更新</div><div class="muted" id="homeToday" style="margin-top:6px"></div></div>
  </div>
  <div class="card"><div class="row"><div class="section-title">账户</div><button class="secondary" onclick="openAccount()">＋账户</button></div><div id="accountHome"></div></div>
@@ -63,9 +63,9 @@ body.dark{--bg:#0b1220;--card:#111827;--text:#f3f4f6;--muted:#9ca3af;--border:#2
   <div class="row" style="margin-top:14px"><div><b>深色模式</b><div class="muted">晚上看账单更舒服</div></div><label class="switch"><input id="darkMode" type="checkbox" onchange="toggleDark()"><span></span></label></div>
   <div class="actions"><button class="secondary" onclick="saveSettings()">保存设置</button><button class="secondary" onclick="openCategoryManager()">管理分类</button></div>
  </div></div>
- <div class="card"><div class="section-title">数据安全</div><p class="muted">账目目前保存在本设备浏览器。建议定期导出备份。</p><div class="actions"><button class="secondary" onclick="exportData()">JSON备份</button><button class="secondary" onclick="exportCSV()">导出CSV</button><button class="secondary" onclick="document.getElementById('importFile').click()">导入备份</button></div><input id="importFile" type="file" accept="application/json" class="hidden" onchange="importData(event)"></div>
+ <div class="card"><div class="section-title">数据安全</div><p class="muted">账目保存在本设备，并自动保留本地副本。更新网站代码不会重置你的余额或账单。</p><div class="mini" style="margin:10px 0"><div class="row"><span>本地数据</span><b id="storageStatus">自动保存中</b></div><div class="updated" id="storageUpdated">—</div></div><div class="actions"><button class="secondary" onclick="exportData()">JSON备份</button><button class="secondary" onclick="exportCSV()">导出CSV</button><button class="secondary" onclick="document.getElementById('importFile').click()">导入备份</button></div><input id="importFile" type="file" accept="application/json" class="hidden" onchange="importData(event)"></div>
  <div class="card"><div class="section-title">数据维护</div><div class="actions"><button class="secondary" onclick="seedDemo()">生成演示数据</button><button class="danger" onclick="resetData()">清空全部数据</button></div></div>
- <div class="card"><div class="muted">版本 2.3 · 双币种个人财务 · 实时刷新</div></div>
+ <div class="card"><div class="muted">版本 2.5 · 双币种个人财务 · 数据持久化 · 实时概览</div></div>
 </section>
 </main>
 <button class="fab" onclick="openTx()">＋ 记一笔</button>
@@ -93,7 +93,7 @@ body.dark{--bg:#0b1220;--card:#111827;--text:#f3f4f6;--muted:#9ca3af;--border:#2
 <div class="modal" id="settingsModal"><div class="sheet form"><div class="row"><h2>设置</h2><button class="secondary" onclick="closeModal('settingsModal')">关闭</button></div><p class="muted">这里也可以从“统计”页面进入完整设置。</p><div class="actions"><button class="primary" onclick="closeModal('settingsModal');showPage('settings')">打开设置</button></div></div></div>
 
 <script>
-const KEY='my_ledger_v1', VERSION=2.3;
+const KEY='my_ledger_data_v3', LEGACY_KEYS=['my_ledger_data_v2','my_ledger_v2','my_ledger_v1','my_ledger_backup_v2','my_ledger_backup_v1'], BACKUP_KEY='my_ledger_backup_v3', IDB_NAME='my_ledger_storage', IDB_STORE='snapshots', VERSION=2.5;
 const ALLOWED_CURRENCIES=['CNY','RUB'];
 const ALLOWED_TYPES=['bank','wallet','cash','card','other'];
 const defaultCategories=['餐饮','购物','交通','房租','娱乐','学习','医疗','工资','水电','旅行','其他'];
@@ -102,6 +102,7 @@ let db, currentTxType='expense', lastPersistedRaw=null;
 function clone(o){return JSON.parse(JSON.stringify(o))}
 function isFiniteNumber(v){return Number.isFinite(Number(v))}
 function localDate(d=new Date()){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
+function normalizeDate(v){const s=String(v??'').trim();const m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(!m)return localDate();const dt=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]));if(dt.getFullYear()!==Number(m[1])||dt.getMonth()!==Number(m[2])-1||dt.getDate()!==Number(m[3]))return localDate();return `${m[1]}-${m[2]}-${m[3]}`}
 function nextId(items){return items.reduce((m,x)=>Math.max(m,Number(x.id)||0),0)+1}
 function normalizeDB(raw){
   const d=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{};
@@ -123,7 +124,7 @@ function normalizeDB(raw){
   for(const t of Array.isArray(d.tx)?d.tx:[]){
     if(!t||typeof t!=='object')continue;
     let id=Number(t.id); if(!Number.isFinite(id)||id<=0||usedTx.has(id))id=nextId(out.tx); usedTx.add(id);
-    const date=/^\d{4}-\d{2}-\d{2}$/.test(String(t.date||''))?String(t.date):localDate();
+    const date=normalizeDate(t.date);
     if(t.type==='income'||t.type==='expense'){
       const account=Number(t.account),a=out.accounts.find(x=>x.id===account); const amount=Number(t.amount);
       if(!a||!accIds.has(account)||!(amount>0)||!ALLOWED_CURRENCIES.includes(t.currency))continue;
@@ -138,22 +139,94 @@ function normalizeDB(raw){
   }
   return out;
 }
-function loadDB(){try{const rawText=localStorage.getItem(KEY);lastPersistedRaw=rawText;return normalizeDB(rawText?JSON.parse(rawText):null)}catch(e){lastPersistedRaw=null;try{alert('数据读取失败，将使用空白账本。')}catch{}return clone(defaultDB)}}
-db=loadDB();
-function persist(){const raw=JSON.stringify(db);localStorage.setItem(KEY,raw);lastPersistedRaw=raw}
+function readStoredRaw(){
+  const candidates=[KEY,...LEGACY_KEYS,BACKUP_KEY];
+  const seen=new Set();
+  for(const k of candidates){
+    if(seen.has(k))continue; seen.add(k);
+    try{const raw=localStorage.getItem(k);if(raw)return {key:k,raw}}catch{}
+  }
+  return {key:null,raw:null};
+}
+function loadDB(){
+  const candidates=[KEY,...LEGACY_KEYS,BACKUP_KEY], seen=new Set();
+  for(const k of candidates){
+    if(seen.has(k))continue; seen.add(k);
+    try{
+      const raw=localStorage.getItem(k); if(!raw)continue;
+      const parsed=JSON.parse(raw); const loaded=normalizeDB(parsed);
+      if(Array.isArray(loaded.accounts)&&Array.isArray(loaded.tx)){
+        const canonical=JSON.stringify(loaded);
+        lastPersistedRaw=canonical;
+        if(k!==KEY || raw!==canonical)setTimeout(()=>{try{persist()}catch{}},0);
+        return loaded;
+      }
+    }catch{}
+  }
+  lastPersistedRaw=null;
+  return clone(defaultDB);
+}
+async function idbOpen(){return await new Promise((resolve,reject)=>{try{const req=indexedDB.open(IDB_NAME,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(IDB_STORE))req.result.createObjectStore(IDB_STORE,{keyPath:'id'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)}catch(e){reject(e)}})}
+async function idbPut(raw){try{const dbx=await idbOpen();await new Promise((resolve,reject)=>{const tx=dbx.transaction(IDB_STORE,'readwrite');tx.objectStore(IDB_STORE).put({id:'latest',raw,savedAt:Date.now()});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});dbx.close()}catch{}}
+async function idbGet(){try{const dbx=await idbOpen();const value=await new Promise((resolve,reject)=>{const req=dbx.transaction(IDB_STORE,'readonly').objectStore(IDB_STORE).get('latest');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});dbx.close();return value||null}catch{return null}}
+function markStorageStatus(label='已自动保存'){const el=document.getElementById('storageStatus');const tm=document.getElementById('storageUpdated');if(el)el.textContent=label;if(tm)tm.textContent='最近保存：'+new Date().toLocaleString('zh-CN')}
+function persist(){const raw=JSON.stringify(db);localStorage.setItem(KEY,raw);localStorage.setItem(BACKUP_KEY,raw);lastPersistedRaw=raw;markStorageStatus('已自动保存');idbPut(raw)}
+async function recoverFromIndexedDBIfNeeded(){try{const primary=localStorage.getItem(KEY);if(primary)return;const rec=await idbGet();if(rec?.raw){const normalized=normalizeDB(JSON.parse(rec.raw));db=normalized;const raw=JSON.stringify(db);localStorage.setItem(KEY,raw);localStorage.setItem(BACKUP_KEY,raw);lastPersistedRaw=raw;render();toast('已从本机自动副本恢复数据')}}catch{}}
+
 function safeCommit(mutator,msg){const before=clone(db);try{mutator();persist();render();if(msg)toast(msg);return true}catch(e){db=before;try{persist()}catch{}render();const isQuota=e?.name==='QuotaExceededError'||e?.code===22||e?.code===1014;toast(isQuota?'保存失败：浏览器存储空间可能已满':(e?.message||'保存失败，请重试'));return false}}
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function fmt(n,c){const v=Number(n);const safe=Number.isFinite(v)?v:0;return c==='CNY'?'¥'+safe.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2}):'₽'+safe.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function txCnyValue(t){const amount=Number(t.amount??0);if(t.currency==='CNY')return amount;const rate=isFiniteNumber(t.fxRate)&&Number(t.fxRate)>0?Number(t.fxRate):db.rate;return amount/rate}
 function accBy(id){return db.accounts.find(a=>Number(a.id)===Number(id))}
 function accountBalances(){const b={};db.accounts.forEach(a=>b[a.id]=Number(a.initial)||0);for(const t of db.tx){if(t.type==='income')b[t.account]=(b[t.account]||0)+Number(t.amount||0);else if(t.type==='expense')b[t.account]=(b[t.account]||0)-Number(t.amount||0);else if(t.type==='transfer'){b[t.from]=(b[t.from]||0)-Number(t.fromAmount||t.amount||0);b[t.to]=(b[t.to]||0)+Number(t.toAmount||t.amount||0)}}return b}
-function monthKey(date){return String(date).slice(0,7)}
+function monthKey(date){const s=String(date??'').trim();return /^\d{4}-\d{2}-\d{2}$/.test(s)?s.slice(0,7):/^\d{4}-\d{2}/.test(s)?s.slice(0,7):''}
 function selectedMonth(){return document.getElementById('statMonth')?.value||monthKey(new Date())}
 function transactionsForMonth(ym){return db.tx.filter(t=>monthKey(t.date)===ym)}
-function summaryMonth(ym){let inc=0,exp=0;const cats={};for(const t of db.tx){if(monthKey(t.date)!==ym)continue;if(t.type==='income'){const v=txCnyValue(t);if(Number.isFinite(v))inc+=v}else if(t.type==='expense'){const v=txCnyValue(t);if(Number.isFinite(v)){exp+=v;cats[t.category||'其他']=(cats[t.category||'其他']||0)+v}}}return{inc,exp,cats}}
+function summaryMonth(ym){let inc=0,exp=0,incCny=0,incRub=0,expCny=0,expRub=0;const cats={};for(const t of db.tx){if(monthKey(t.date)!==ym)continue;if(t.type==='income'){const amount=Number(t.amount||0);if(!Number.isFinite(amount))continue;const v=txCnyValue(t);if(Number.isFinite(v)){inc+=v;if(t.currency==='CNY')incCny+=amount;else incRub+=amount}}else if(t.type==='expense'){const amount=Number(t.amount||0);if(!Number.isFinite(amount))continue;const v=txCnyValue(t);if(Number.isFinite(v)){exp+=v;if(t.currency==='CNY')expCny+=amount;else expRub+=amount;const cat=t.category||'其他';cats[cat]=(cats[cat]||0)+v}}}return{inc,exp,cats,incCny,incRub,expCny,expRub}}
+
+function monthNativeText(s,kind){
+  if(kind==='income'){
+    const parts=[]; if(s.incCny>0)parts.push(fmt(s.incCny,'CNY')); if(s.incRub>0)parts.push(fmt(s.incRub,'RUB')); return parts.length?parts.join(' + '):'—';
+  }
+  if(kind==='expense'){
+    const parts=[]; if(s.expCny>0)parts.push(fmt(s.expCny,'CNY')); if(s.expRub>0)parts.push(fmt(s.expRub,'RUB')); return parts.length?parts.join(' + '):'—';
+  }
+  return '按人民币折算';
+}
+
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1900)}
 function render(){renderHome();populateFilters();renderBills();renderAccounts();renderStats();renderCategories();renderSettings();document.body.classList.toggle('dark',db.dark)}
-function renderHome(){const b=accountBalances();const cny=db.accounts.filter(a=>a.currency==='CNY').reduce((s,a)=>s+(b[a.id]||0),0);const rub=db.accounts.filter(a=>a.currency==='RUB').reduce((s,a)=>s+(b[a.id]||0),0);document.getElementById('cnyTotal').textContent=fmt(cny,'CNY');document.getElementById('rubTotal').textContent=fmt(rub,'RUB');document.getElementById('totalCny').textContent=fmt(cny+rub/db.rate,'CNY');const ym=monthKey(new Date()),s=summaryMonth(ym),today=localDate(),todayExp=db.tx.filter(t=>t.date===today&&t.type==='expense').reduce((sum,t)=>sum+txCnyValue(t),0);document.getElementById('monthLabel').textContent=ym;document.getElementById('homeIncome').textContent=fmt(s.inc,'CNY');document.getElementById('homeExpense').textContent=fmt(s.exp,'CNY');document.getElementById('homeNet').textContent=fmt(s.inc-s.exp,'CNY');const over=db.budget>0&&s.exp>db.budget;document.getElementById('budgetText').textContent=db.budget>0?(over?`已超预算 ${fmt(s.exp-db.budget,'CNY')}`:`${fmt(s.exp,'CNY')} / ${fmt(db.budget,'CNY')}`):'未设置';document.getElementById('budgetText').className=over?'warning':'muted';document.getElementById('budgetBar').style.width=db.budget>0?Math.min(100,s.exp/db.budget*100)+'%':'0%';const items=db.accounts.map(a=>{const bal=b[a.id]||0;return `<div class="item row"><div><div class="titleline"><span>${a.currency==='CNY'?'🇨🇳':'🇷🇺'}</span><b>${esc(a.name)}</b></div><small class="muted">${typeLabel(a.type)} · ${a.currency}</small></div><b>${fmt(bal,a.currency)}</b></div>`}).join('');document.getElementById('accountHome').innerHTML=items||'<div class="empty">还没有账户</div>';const recent=db.tx.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))||Number(b.id)-Number(a.id)).slice(0,6);document.getElementById('recent').innerHTML=recent.map(renderTxRow).join('')||'<div class="empty">还没有账单，点击“＋ 记一笔”开始。</div>';const updated=document.getElementById('homeUpdated');if(updated)updated.innerHTML='<span class="live-dot"></span>刚刚更新 · '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});const ht=document.getElementById('homeToday');if(ht)ht.textContent=`今日支出 ${fmt(todayExp,'CNY')}（按历史汇率折算）`}
+function renderHome(){
+  const b=accountBalances();
+  const cny=db.accounts.filter(a=>a.currency==='CNY').reduce((sum,a)=>sum+(b[a.id]||0),0);
+  const rub=db.accounts.filter(a=>a.currency==='RUB').reduce((sum,a)=>sum+(b[a.id]||0),0);
+  document.getElementById('cnyTotal').textContent=fmt(cny,'CNY');
+  document.getElementById('rubTotal').textContent=fmt(rub,'RUB');
+  document.getElementById('totalCny').textContent=fmt(cny+rub/db.rate,'CNY');
+  const ym=monthKey(localDate());
+  const s=summaryMonth(ym);
+  const today=localDate();
+  const todayExp=db.tx.filter(t=>normalizeDate(t.date)===today&&t.type==='expense').reduce((sum,t)=>sum+txCnyValue(t),0);
+  document.getElementById('monthLabel').textContent=ym;
+  document.getElementById('homeIncome').textContent=fmt(s.inc,'CNY');
+  document.getElementById('homeExpense').textContent=fmt(s.exp,'CNY');
+  document.getElementById('homeNet').textContent=fmt(s.inc-s.exp,'CNY');
+  document.getElementById('homeIncomeNative').textContent=monthNativeText(s,'income');
+  document.getElementById('homeExpenseNative').textContent=monthNativeText(s,'expense');
+  const over=db.budget>0&&s.exp>db.budget;
+  document.getElementById('budgetText').textContent=db.budget>0?(over?`已超预算 ${fmt(s.exp-db.budget,'CNY')}`:`${fmt(s.exp,'CNY')} / ${fmt(db.budget,'CNY')}`):'未设置';
+  document.getElementById('budgetText').className=over?'warning':'muted';
+  document.getElementById('budgetBar').style.width=db.budget>0?Math.min(100,s.exp/db.budget*100)+'%':'0%';
+  const items=db.accounts.map(a=>{const bal=b[a.id]||0;return `<div class="item row"><div><div class="titleline"><span>${a.currency==='CNY'?'🇨🇳':'🇷🇺'}</span><b>${esc(a.name)}</b></div><small class="muted">${typeLabel(a.type)} · ${a.currency}</small></div><b>${fmt(bal,a.currency)}</b></div>`}).join('');
+  document.getElementById('accountHome').innerHTML=items||'<div class="empty">还没有账户</div>';
+  const recent=db.tx.slice().sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0)||String(b.date).localeCompare(String(a.date))||Number(b.id)-Number(a.id)).slice(0,6);
+  document.getElementById('recent').innerHTML=recent.map(renderTxRow).join('')||'<div class="empty">还没有账单，点击“＋ 记一笔”开始。</div>';
+  const updated=document.getElementById('homeUpdated');
+  if(updated)updated.innerHTML='<span class="live-dot"></span>刚刚更新 · '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const ht=document.getElementById('homeToday');
+  if(ht)ht.textContent=`今日支出 ${fmt(todayExp,'CNY')}（按历史汇率折算）`;
+}
+
 function renderTxRow(t){const sign=t.type==='income'?'+':t.type==='expense'?'−':'';let label='';if(t.type==='transfer'){const f=accBy(t.from),to=accBy(t.to);label=`${f?.name||'已删除'} → ${to?.name||'已删除'}`;if(t.fromCurrency!==t.toCurrency)label+=` · 换汇 ${fmt(t.fromAmount,t.fromCurrency)} → ${fmt(t.toAmount,t.toCurrency)}`}else label=`${accBy(t.account)?.name||'已删除'} · ${t.category||''}`;return `<div class="item row"><div style="min-width:0"><div class="titleline"><span>${t.type==='income'?'💰':t.type==='expense'?'🧾':'↔️'}</span><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.note||t.category||'无备注')}</b></div><small class="muted">${esc(t.date)} · ${esc(label)}</small></div><div style="text-align:right"><b class="amount ${t.type==='income'?'plus':t.type==='expense'?'minus':''}">${sign}${fmt(t.amount??t.fromAmount,t.currency||t.fromCurrency)}</b><br><button class="link muted" onclick="event.stopPropagation();editTx(${t.id})">编辑</button> <button class="link muted" onclick="event.stopPropagation();deleteTx(${t.id})">删除</button></div></div>`}
 function populateFilters(){const months=[...new Set(db.tx.map(t=>monthKey(t.date)).filter(Boolean))].sort().reverse();const mf=document.getElementById('monthFilter'),prev=mf.value||'all';mf.innerHTML='<option value="all">全部月份</option>'+months.map(m=>`<option value="${m}">${m}</option>`).join('');if(months.includes(prev))mf.value=prev;const sm=document.getElementById('statMonth'),cur=sm.value||monthKey(new Date());const statMonths=[...new Set([...months,monthKey(new Date())])].sort().reverse();sm.innerHTML=statMonths.map(m=>`<option value="${m}">${m}</option>`).join('');sm.value=statMonths.includes(cur)?cur:statMonths[0];const af=document.getElementById('accountFilter'),ap=af.value||'all';af.innerHTML='<option value="all">全部账户</option>'+db.accounts.map(a=>`<option value="${a.id}">${esc(a.name)} (${a.currency})</option>`).join('');if(db.accounts.some(a=>String(a.id)===String(ap)))af.value=ap;const cf=document.getElementById('categoryFilter'),cp=cf.value||'all';cf.innerHTML='<option value="all">全部分类</option>'+db.categories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');if(db.categories.includes(cp))cf.value=cp}
 function renderBills(){let list=[...db.tx].sort((a,b)=>String(b.date).localeCompare(String(a.date))||Number(b.id)-Number(a.id));const q=(document.getElementById('search')?.value||'').trim().toLowerCase(),mf=document.getElementById('monthFilter')?.value||'all',tf=document.getElementById('typeFilter')?.value||'all',cf=document.getElementById('currencyFilter')?.value||'all',af=document.getElementById('accountFilter')?.value||'all',catf=document.getElementById('categoryFilter')?.value||'all';list=list.filter(t=>{const f=accBy(t.account),from=accBy(t.from),to=accBy(t.to);const searchBlob=[t.note,t.category,f?.name,from?.name,to?.name,t.date,t.currency,t.fromCurrency,t.toCurrency].filter(Boolean).join(' ').toLowerCase();const currOk=cf==='all'||t.currency===cf||t.fromCurrency===cf||t.toCurrency===cf;const accountOk=af==='all'||t.account===Number(af)||t.from===Number(af)||t.to===Number(af);const categoryOk=catf==='all'||t.category===catf;return(!q||searchBlob.includes(q))&&(mf==='all'||monthKey(t.date)===mf)&&(tf==='all'||t.type===tf)&&currOk&&accountOk&&categoryOk});document.getElementById('billCount').textContent=`${list.length} 条`;document.getElementById('billList').innerHTML=list.map(renderTxRow).join('')||'<div class="empty">没有符合条件的账单</div>'}
@@ -180,6 +253,7 @@ function editAccount(id){openAccount(id)}
 function saveAccount(){const id=Number(document.getElementById('editAccId').value||0),name=document.getElementById('accName').value.trim(),type=document.getElementById('accType').value,currency=document.getElementById('accCurrency').value,initial=Number(document.getElementById('accBalance').value||0),allowNegative=document.getElementById('accAllowNegative').checked;if(!name)return toast('请输入账户名称');if(!ALLOWED_CURRENCIES.includes(currency))return toast('目前只支持 CNY / RUB');if(!ALLOWED_TYPES.includes(type))return toast('账户类型不正确');if(!Number.isFinite(initial))return toast('初始余额不正确');const finalAllowNegative=allowNegative||type==='card';if(initial<0&&!finalAllowNegative)return toast('该账户不允许负余额，初始余额不能小于 0');const ok=safeCommit(()=>{if(id){const a=accBy(id),hasTx=db.tx.some(t=>t.account===id||t.from===id||t.to===id);if(!a)throw new Error('账户不存在');if(hasTx&&a.currency!==currency)throw new Error('已有账单的账户不能直接更换币种');Object.assign(a,{name,type,currency,initial,allowNegative:finalAllowNegative});const bal=accountBalances()[id]||0;if(!a.allowNegative&&bal<-0.0000001)throw new Error('该账户当前余额为负，不能关闭负余额功能')}else db.accounts.push({id:nextId(db.accounts),name,type,currency,initial,allowNegative:finalAllowNegative,active:true})},id?'账户已修改':'账户已添加');if(ok)closeModal('accModal')}
 function toggleAccountActive(id){const a=accBy(id);if(!a)return;const next=a.active===false;safeCommit(()=>{a.active=next},next?'账户已启用':'账户已停用')}
 function deleteAccount(id){const hasTx=db.tx.some(t=>t.account===id||t.from===id||t.to===id);if(hasTx){return toast('已有历史账单的账户不能删除，可选择停用。')}if(!confirm('确定删除这个账户吗？'))return;safeCommit(()=>{db.accounts=db.accounts.filter(a=>a.id!==id)},'账户已删除')}
+function manualRefresh(){const before=JSON.stringify(db);refreshFromStorage();if(JSON.stringify(db)===before)render();toast('已刷新')}
 function openSettings(){showPage('settings')}
 function saveSettings(){const r=Number(document.getElementById('rateInput').value),b=Number(document.getElementById('budgetInput').value||0);if(!(r>0)||!Number.isFinite(r))return toast('汇率必须是大于 0 的数字');if(b<0||!Number.isFinite(b))return toast('预算必须是 0 或更大的数字');safeCommit(()=>{db.rate=r;db.budget=b;db.dark=document.getElementById('darkMode').checked},'设置已保存')}
 function toggleDark(){const before=clone(db);try{db.dark=document.getElementById('darkMode').checked;persist();document.body.classList.toggle('dark',db.dark)}catch(e){db=before;document.getElementById('darkMode').checked=db.dark;toast('主题保存失败')}}
@@ -192,11 +266,13 @@ function csvEscape(v){const s=String(v??'');return /[\",\n]/.test(s)?'"'+s.repla
 function exportCSV(){const headers=['日期','类型','金额','币种','账户/转出账户','转入账户','分类','备注'];const rows=db.tx.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(t=>{const type=t.type==='income'?'收入':t.type==='expense'?'支出':'转账/换汇';const from=accBy(t.from)?.name||accBy(t.account)?.name||'';const to=accBy(t.to)?.name||'';const amount=t.type==='transfer'?`${t.fromAmount} → ${t.toAmount}`:t.amount;const currency=t.type==='transfer'?`${t.fromCurrency} → ${t.toCurrency}`:t.currency;return [t.date,type,amount,currency,from,to,t.category||'',t.note||''];});const csv=[headers,...rows].map(r=>r.map(csvEscape).join(',')).join('\n');const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`我的记账本_${localDate()}.csv`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);toast('CSV 已导出')}
 function seedDemo(){if(db.tx.length&& !confirm('当前已有账单，继续会追加演示数据。'))return;const rub=db.accounts.find(a=>a.currency==='RUB'),cny=db.accounts.find(a=>a.currency==='CNY');if(!rub||!cny)return toast('演示数据需要至少一个 RUB 账户和一个 CNY 账户');const d=localDate(),base=nextId(db.tx);const demos=[{id:base,type:'income',amount:30000,currency:rub.currency,account:rub.id,category:db.categories.includes('工资')?'工资':db.categories[0],date:d,note:'演示收入',fxRate:db.rate,createdAt:Date.now()},{id:base+1,type:'expense',amount:450,currency:rub.currency,account:rub.id,category:db.categories.includes('餐饮')?'餐饮':db.categories[0],date:d,note:'午饭',fxRate:db.rate,createdAt:Date.now()+1},{id:base+2,type:'transfer',from:rub.id,to:cny.id,fromCurrency:'RUB',toCurrency:'CNY',fromAmount:5500,toAmount:Number((5500/db.rate).toFixed(2)),amount:5500,currency:'RUB',date:d,note:'演示换汇',createdAt:Date.now()+2}];const prospective=balancesFor([...db.tx,...demos]);for(const a of db.accounts){if(!a.allowNegative&&(prospective[a.id]||0)<-0.000001)return toast(`演示数据会让账户“${a.name}”出现负余额，请先给账户设置初始余额。`)}safeCommit(()=>db.tx.push(...demos),'已加入演示数据')}
 function resetData(){if(!confirm('确定清空所有账户和账单吗？此操作不可撤销，请先导出备份。'))return;safeCommit(()=>{db=clone(defaultDB)},'已清空数据')}
-function refreshFromStorage(){try{const raw=localStorage.getItem(KEY);if(raw===lastPersistedRaw)return;db=normalizeDB(raw?JSON.parse(raw):null);lastPersistedRaw=raw;render()}catch(e){toast('同步数据失败')}}
+function refreshFromStorage(){try{const found=readStoredRaw();const raw=found.raw;if(!raw)return;if(raw===lastPersistedRaw)return;const normalized=normalizeDB(JSON.parse(raw));db=normalized;const canonical=JSON.stringify(db);lastPersistedRaw=canonical;if(found.key!==KEY)persist();else render()}catch(e){toast('同步数据失败')}}
 window.addEventListener('focus',refreshFromStorage);window.addEventListener('pageshow',refreshFromStorage);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshFromStorage()});window.addEventListener('storage',e=>{if(e.key===KEY)refreshFromStorage()});setInterval(refreshFromStorage,2000);
 function closeModal(id){document.getElementById(id).classList.remove('show')}
-function init(){document.getElementById('today').textContent=new Date().toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'});render();document.body.classList.toggle('dark',db.dark);setTxType('expense');document.querySelectorAll('#transferFields input').forEach(x=>x.addEventListener('input',updateTransferRateText));document.getElementById('trFrom').addEventListener('change',syncTransferCurrency);document.getElementById('trTo').addEventListener('change',syncTransferCurrency);document.getElementById('categoryList').addEventListener('click',e=>{const b=e.target.closest('.category-remove');if(b)removeCategory(b.dataset.category)});document.getElementById('accType').addEventListener('change',()=>{if(document.getElementById('accType').value==='card')document.getElementById('accAllowNegative').checked=true});if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(()=>{})}}
+db=loadDB();
+function init(){document.getElementById('today').textContent=new Date().toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'});render();markStorageStatus('已自动保存');document.body.classList.toggle('dark',db.dark);setTxType('expense');document.querySelectorAll('#transferFields input').forEach(x=>x.addEventListener('input',updateTransferRateText));document.getElementById('trFrom').addEventListener('change',syncTransferCurrency);document.getElementById('trTo').addEventListener('change',syncTransferCurrency);document.getElementById('categoryList').addEventListener('click',e=>{const b=e.target.closest('.category-remove');if(b)removeCategory(b.dataset.category)});document.getElementById('accType').addEventListener('change',()=>{if(document.getElementById('accType').value==='card')document.getElementById('accAllowNegative').checked=true});if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(()=>{})}}
 init();
+recoverFromIndexedDBIfNeeded();
 </script>
 </body>
 </html>
