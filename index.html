@@ -65,7 +65,7 @@ body.dark{--bg:#0b1220;--card:#111827;--text:#f3f4f6;--muted:#9ca3af;--border:#2
  </div></div>
  <div class="card"><div class="section-title">数据安全</div><p class="muted">账目保存在本设备，并自动保留本地副本。更新网站代码不会重置你的余额或账单。</p><div class="mini" style="margin:10px 0"><div class="row"><span>本地数据</span><b id="storageStatus">自动保存中</b></div><div class="updated" id="storageUpdated">—</div></div><div class="actions"><button class="secondary" onclick="exportData()">JSON备份</button><button class="secondary" onclick="exportCSV()">导出CSV</button><button class="secondary" onclick="document.getElementById('importFile').click()">导入备份</button></div><input id="importFile" type="file" accept="application/json" class="hidden" onchange="importData(event)"></div>
  <div class="card"><div class="section-title">数据维护</div><div class="actions"><button class="secondary" onclick="seedDemo()">生成演示数据</button><button class="danger" onclick="resetData()">清空全部数据</button></div></div>
- <div class="card"><div class="muted">版本 2.5 · 双币种个人财务 · 数据持久化 · 实时概览</div></div>
+ <div class="card"><div class="muted">版本 2.6 · 双币种个人财务 · 数据持久化 · 实时概览</div></div>
 </section>
 </main>
 <button class="fab" onclick="openTx()">＋ 记一笔</button>
@@ -93,7 +93,7 @@ body.dark{--bg:#0b1220;--card:#111827;--text:#f3f4f6;--muted:#9ca3af;--border:#2
 <div class="modal" id="settingsModal"><div class="sheet form"><div class="row"><h2>设置</h2><button class="secondary" onclick="closeModal('settingsModal')">关闭</button></div><p class="muted">这里也可以从“统计”页面进入完整设置。</p><div class="actions"><button class="primary" onclick="closeModal('settingsModal');showPage('settings')">打开设置</button></div></div></div>
 
 <script>
-const KEY='my_ledger_data_v3', LEGACY_KEYS=['my_ledger_data_v2','my_ledger_v2','my_ledger_v1','my_ledger_backup_v2','my_ledger_backup_v1'], BACKUP_KEY='my_ledger_backup_v3', IDB_NAME='my_ledger_storage', IDB_STORE='snapshots', VERSION=2.5;
+const KEY='my_ledger_data_v3', LEGACY_KEYS=['my_ledger_data_v2','my_ledger_v2','my_ledger_v1','my_ledger_backup_v2','my_ledger_backup_v1'], BACKUP_KEY='my_ledger_backup_v3', IDB_NAME='my_ledger_storage', IDB_STORE='snapshots', VERSION=2.6;
 const ALLOWED_CURRENCIES=['CNY','RUB'];
 const ALLOWED_TYPES=['bank','wallet','cash','card','other'];
 const defaultCategories=['餐饮','购物','交通','房租','娱乐','学习','医疗','工资','水电','旅行','其他'];
@@ -179,7 +179,7 @@ function fmt(n,c){const v=Number(n);const safe=Number.isFinite(v)?v:0;return c==
 function txCnyValue(t){const amount=Number(t.amount??0);if(t.currency==='CNY')return amount;const rate=isFiniteNumber(t.fxRate)&&Number(t.fxRate)>0?Number(t.fxRate):db.rate;return amount/rate}
 function accBy(id){return db.accounts.find(a=>Number(a.id)===Number(id))}
 function accountBalances(){const b={};db.accounts.forEach(a=>b[a.id]=Number(a.initial)||0);for(const t of db.tx){if(t.type==='income')b[t.account]=(b[t.account]||0)+Number(t.amount||0);else if(t.type==='expense')b[t.account]=(b[t.account]||0)-Number(t.amount||0);else if(t.type==='transfer'){b[t.from]=(b[t.from]||0)-Number(t.fromAmount||t.amount||0);b[t.to]=(b[t.to]||0)+Number(t.toAmount||t.amount||0)}}return b}
-function monthKey(date){const s=String(date??'').trim();return /^\d{4}-\d{2}-\d{2}$/.test(s)?s.slice(0,7):/^\d{4}-\d{2}/.test(s)?s.slice(0,7):''}
+function monthKey(date){if(date instanceof Date && !Number.isNaN(date.getTime())){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;}const s=String(date??'').trim();return /^\d{4}-\d{2}-\d{2}$/.test(s)?s.slice(0,7):/^\d{4}-\d{2}/.test(s)?s.slice(0,7):''}
 function selectedMonth(){return document.getElementById('statMonth')?.value||monthKey(new Date())}
 function transactionsForMonth(ym){return db.tx.filter(t=>monthKey(t.date)===ym)}
 function summaryMonth(ym){let inc=0,exp=0,incCny=0,incRub=0,expCny=0,expRub=0;const cats={};for(const t of db.tx){if(monthKey(t.date)!==ym)continue;if(t.type==='income'){const amount=Number(t.amount||0);if(!Number.isFinite(amount))continue;const v=txCnyValue(t);if(Number.isFinite(v)){inc+=v;if(t.currency==='CNY')incCny+=amount;else incRub+=amount}}else if(t.type==='expense'){const amount=Number(t.amount||0);if(!Number.isFinite(amount))continue;const v=txCnyValue(t);if(Number.isFinite(v)){exp+=v;if(t.currency==='CNY')expCny+=amount;else expRub+=amount;const cat=t.category||'其他';cats[cat]=(cats[cat]||0)+v}}}return{inc,exp,cats,incCny,incRub,expCny,expRub}}
@@ -203,7 +203,7 @@ function renderHome(){
   document.getElementById('cnyTotal').textContent=fmt(cny,'CNY');
   document.getElementById('rubTotal').textContent=fmt(rub,'RUB');
   document.getElementById('totalCny').textContent=fmt(cny+rub/db.rate,'CNY');
-  const ym=monthKey(localDate());
+  const ym=localDate().slice(0,7);
   const s=summaryMonth(ym);
   const today=localDate();
   const todayExp=db.tx.filter(t=>normalizeDate(t.date)===today&&t.type==='expense').reduce((sum,t)=>sum+txCnyValue(t),0);
