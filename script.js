@@ -1,100 +1,4 @@
-<!doctype html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#111827">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="./icon-192.png">
-<meta name="description" content="人民币与卢布双币种个人记账本">
-<link rel="manifest" href="./manifest.json">
-<title>我的记账本</title>
-<style>
-:root{--bg:#f4f5f7;--card:#fff;--text:#111827;--muted:#6b7280;--border:#e5e7eb;--soft:#f3f4f6;--primary:#111827;--good:#059669;--bad:#dc2626;--warn:#b45309;--shadow:0 5px 22px rgba(17,24,39,.07)}
-*{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif}body{min-height:100vh}
-button,input,select{font:inherit}button{border:0;cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}
-.app{max-width:760px;margin:0 auto;min-height:100vh;padding-bottom:92px}.top{position:sticky;top:0;z-index:20;padding:20px 18px 14px;background:var(--primary);color:#fff}.top h1{margin:0;font-size:25px}.top small{display:block;margin-top:5px;opacity:.72}.content{padding:14px}
-.card{background:var(--card);border-radius:20px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}.row{display:flex;align-items:center;justify-content:space-between;gap:12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.mini{background:var(--soft);border-radius:14px;padding:13px}.mini .muted{display:block}.mini b{display:block;margin-top:5px;font-size:18px}.balance{font-size:32px;font-weight:800;margin:7px 0 12px}.muted{font-size:13px;color:var(--muted)}.section-title{font-weight:800;margin-bottom:10px}.subtle{background:var(--soft);padding:3px 7px;border-radius:8px;font-size:12px}
-button.primary{background:var(--primary);color:#fff;padding:11px 14px;border-radius:12px;font-weight:700}button.secondary{background:var(--soft);color:var(--text);padding:10px 13px;border-radius:12px}button.danger{background:#fee2e2;color:#991b1b;padding:10px 13px;border-radius:12px}button.link{background:none;color:var(--text);padding:0}
-.item{padding:12px 0;border-bottom:1px solid var(--border)}.item:last-child{border-bottom:0}.titleline{display:flex;align-items:center;gap:8px}.amount{font-weight:800;white-space:nowrap}.plus{color:var(--good)}.minus{color:var(--bad)}.warning{color:var(--warn)}
-.searchbar{position:sticky;top:78px;z-index:9;background:var(--bg);padding-bottom:8px}.filters{display:grid;grid-template-columns:1fr 1fr;gap:8px}.filters input,.filters select,.form input,.form select,.form textarea{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:12px;background:#fff;color:var(--text);outline:none}.form textarea{min-height:90px;resize:vertical}.form label{display:block;margin:11px 0 5px;font-size:13px;color:var(--muted)}
-.nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(760px,100%);height:68px;background:rgba(255,255,255,.97);backdrop-filter:blur(10px);border-top:1px solid var(--border);display:flex;z-index:30;padding-bottom:env(safe-area-inset-bottom)}.nav button{flex:1;background:none;color:#6b7280;font-size:12px}.nav button .ico{font-size:20px;display:block;line-height:23px}.nav button.active{color:var(--text);font-weight:800}.fab{position:fixed;left:50%;transform:translateX(-50%);bottom:78px;z-index:25;width:min(650px,calc(100% - 28px));padding:14px 18px;border-radius:16px;background:var(--primary);color:#fff;font-weight:800;box-shadow:0 12px 28px rgba(17,24,39,.25)}
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-end}.modal.show{display:flex}.sheet{width:min(760px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:24px 24px 0 0;padding:18px 18px calc(24px + env(safe-area-inset-bottom));margin:auto 0 0}.sheet h2{margin:0;font-size:21px}.actions{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap}.actions>*{flex:1;min-width:120px}.type-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;background:var(--soft);padding:5px;border-radius:13px}.type-tabs button{padding:10px 6px;background:transparent;color:var(--muted);border-radius:10px}.type-tabs button.active{background:#fff;color:var(--text);font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.07)}
-.pill{padding:4px 8px;border-radius:999px;background:var(--soft);font-size:11px}.progress{height:9px;background:#e5e7eb;border-radius:99px;overflow:hidden}.progress i{display:block;height:100%;background:var(--primary);border-radius:99px}.empty{text-align:center;color:#9ca3af;padding:26px 10px}.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#34d399;margin-right:5px;vertical-align:1px}.updated{font-size:11px;color:var(--muted);margin-top:8px}.hidden{display:none!important}
-.statbar{height:10px;background:#e5e7eb;border-radius:99px;overflow:hidden;margin-top:7px}.statbar i{display:block;height:100%;background:var(--primary)}.chart{display:flex;align-items:flex-end;gap:8px;height:180px;padding:10px 4px 0;border-bottom:1px solid var(--border)}.col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:5px}.col i{width:100%;max-width:30px;background:var(--primary);border-radius:8px 8px 0 0;min-height:2px}.col span{font-size:10px;color:var(--muted)}
-.switch{position:relative;width:44px;height:26px}.switch input{display:none}.switch span{position:absolute;inset:0;background:#d1d5db;border-radius:99px;transition:.2s}.switch span:after{content:"";position:absolute;width:20px;height:20px;top:3px;left:3px;background:#fff;border-radius:50%;transition:.2s}.switch input:checked+span{background:var(--primary)}.switch input:checked+span:after{left:21px}
-.toast{position:fixed;left:50%;bottom:150px;transform:translateX(-50%) translateY(12px);background:#111827;color:white;padding:11px 14px;border-radius:12px;opacity:0;pointer-events:none;transition:.2s;z-index:200;max-width:90%;font-size:14px}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-@media(max-width:420px){.grid3{grid-template-columns:1fr 1fr}.filters{grid-template-columns:1fr}.balance{font-size:29px}.top{padding-top:16px}.fab{bottom:76px}}
-body.dark{--bg:#0b1220;--card:#111827;--text:#f3f4f6;--muted:#9ca3af;--border:#263244;--soft:#1b2433;--primary:#f3f4f6;--good:#34d399;--bad:#f87171;--warn:#fbbf24;--shadow:0 6px 24px rgba(0,0,0,.25)}body.dark button.primary{color:#111827}body.dark .nav{background:rgba(17,24,39,.97)}body.dark .modal .sheet{background:#111827}body.dark input,body.dark select,body.dark textarea{background:#0f172a;color:#f3f4f6}
-</style>
-</head>
-<body>
-<div class="app">
-<header class="top"><h1>我的记账本</h1><small id="today"></small></header>
-<main class="content">
-<section id="page-home">
- <div class="card">
-  <div class="row"><div class="muted">总资产 · 折算人民币</div><div style="display:flex;gap:7px"><button class="secondary" onclick="manualRefresh()">↻</button><button class="secondary" onclick="openSettings()">⚙️</button></div></div>
-  <div class="balance" id="totalCny">¥0.00</div>
-  <div class="grid"><div class="mini"><span>🇨🇳 人民币</span><b id="cnyTotal">¥0.00</b></div><div class="mini"><span>🇷🇺 卢布</span><b id="rubTotal">₽0.00</b></div></div>
- </div>
- <div class="card"><div class="row"><div class="section-title">本月概览</div><span class="subtle" id="monthLabel"></span></div>
-  <div class="grid3"><div class="mini"><span class="muted">收入</span><b class="plus" id="homeIncome">¥0</b><small class="muted" id="homeIncomeNative">—</small></div><div class="mini"><span class="muted">支出</span><b class="minus" id="homeExpense">¥0</b><small class="muted" id="homeExpenseNative">—</small></div><div class="mini"><span class="muted">结余</span><b id="homeNet">¥0</b><small class="muted">按人民币折算</small></div></div>
-  <div style="margin-top:13px"><div class="row"><span class="muted">本月预算</span><span id="budgetText" class="muted">未设置</span></div><div class="progress" style="margin-top:7px"><i id="budgetBar" style="width:0%"></i></div><div class="updated" id="homeUpdated"><span class="live-dot"></span>刚刚更新</div><div class="muted" id="homeToday" style="margin-top:6px"></div></div>
- </div>
- <div class="card"><div class="row"><div class="section-title">账户</div><button class="secondary" onclick="openAccount()">＋账户</button></div><div id="accountHome"></div></div>
- <div class="card"><div class="row"><div class="section-title">最近账单</div><button class="secondary" onclick="showPage('bills')">全部</button></div><div id="recent"></div></div>
-</section>
 
-<section id="page-bills" class="hidden">
- <div class="searchbar"><div class="filters"><input id="search" placeholder="搜索备注、分类、账户..." oninput="renderBills()"><select id="monthFilter" onchange="renderBills()"><option value="all">全部月份</option></select></div><div class="filters" style="margin-top:8px"><select id="typeFilter" onchange="renderBills()"><option value="all">全部类型</option><option value="income">收入</option><option value="expense">支出</option><option value="transfer">转账 / 换汇</option></select><select id="currencyFilter" onchange="renderBills()"><option value="all">全部币种</option><option value="CNY">CNY 人民币</option><option value="RUB">RUB 卢布</option></select></div><div class="filters" style="margin-top:8px"><select id="accountFilter" onchange="renderBills()"><option value="all">全部账户</option></select><select id="categoryFilter" onchange="renderBills()"><option value="all">全部分类</option></select></div></div>
- <div class="card"><div class="row"><div class="section-title">账单记录</div><span class="muted" id="billCount"></span></div><div id="billList"></div></div>
-</section>
-
-<section id="page-accounts" class="hidden"><div class="card"><div class="row"><div class="section-title">账户管理</div><button class="primary" onclick="openAccount()">＋账户</button></div><div id="accountList"></div></div></section>
-
-<section id="page-stats" class="hidden"><div class="card"><div class="row"><div class="section-title">统计分析</div><select id="statMonth" style="width:auto;padding:8px 10px" onchange="renderStats()"></select></div><div class="grid"><div class="mini"><span class="muted">收入</span><b class="plus" id="monthIn">¥0</b></div><div class="mini"><span class="muted">支出</span><b class="minus" id="monthOut">¥0</b></div></div><div id="categoryStats" style="margin-top:15px"></div><div class="section-title" style="margin-top:18px">近半年支出</div><div id="sixMonthChart" class="chart"></div></div></section>
-
-<section id="page-settings" class="hidden">
- <div class="card"><div class="section-title">基础设置</div><div class="form">
-  <label>1 CNY = 多少 RUB（当前汇率）</label><input id="rateInput" type="number" step="0.0001">
-  <label>每月预算（人民币）</label><input id="budgetInput" type="number" step="0.01" min="0">
-  <label>账本开始日期</label><input id="ledgerStartDate" type="date"><div class="muted" style="margin-top:5px">初始余额视为账本开始日期的起始余额；已有账单早于此日期时不能把开始日期往后改。</div>
-  <div class="mini" style="margin-top:12px"><div class="row"><b>汇率历史</b><button class="secondary" onclick="addFxHistory()">＋添加</button></div><div class="muted" style="margin-top:4px">新增账单会按账单日期匹配最近的历史汇率；已保存的老账单汇率不会被修改。</div><div id="fxHistoryList" style="margin-top:8px"></div></div>
-  <div class="row" style="margin-top:14px"><div><b>深色模式</b><div class="muted">晚上看账单更舒服</div></div><label class="switch"><input id="darkMode" type="checkbox" onchange="toggleDark()"><span></span></label></div>
-  <div class="actions"><button class="secondary" onclick="saveSettings()">保存设置</button><button class="secondary" onclick="openCategoryManager()">管理分类</button></div>
- </div></div>
- <div class="card"><div class="section-title">数据安全</div><p class="muted">账目保存在本设备，并自动保留本地副本。更新网站代码不会重置你的余额或账单。</p><div class="mini" style="margin:10px 0"><div class="row"><span>本地数据</span><b id="storageStatus">自动保存中</b></div><div class="updated" id="storageUpdated">—</div></div><div class="actions"><button class="secondary" onclick="exportData()">JSON备份</button><button class="secondary" onclick="exportCSV()">导出CSV</button><button class="secondary" onclick="document.getElementById('importFile').click()">导入备份</button></div><input id="importFile" type="file" accept="application/json" class="hidden" onchange="importData(event)"></div>
- <div class="card"><div class="section-title">数据维护</div><div class="actions"><button class="secondary" onclick="seedDemo()">生成演示数据</button><button class="danger" onclick="resetData()">清空全部数据</button></div></div>
- <div class="card"><div class="muted">版本 2.8 · 双币种个人财务 · 数据安全与历史汇率增强</div></div>
-</section>
-</main>
-<button class="fab" onclick="openTx()">＋ 记一笔</button>
-<nav class="nav">
- <button class="active" data-page="home" onclick="showPage('home',this)"><span class="ico">⌂</span>首页</button>
- <button data-page="bills" onclick="showPage('bills',this)"><span class="ico">☷</span>账单</button>
- <button data-page="accounts" onclick="showPage('accounts',this)"><span class="ico">◉</span>账户</button>
- <button data-page="stats" onclick="showPage('stats',this)"><span class="ico">▥</span>统计</button>
-</nav>
-</div>
-<div id="toast" class="toast"></div>
-
-<div class="modal" id="txModal"><div class="sheet form">
- <div class="row"><h2 id="txTitle">记一笔</h2><button class="secondary" onclick="closeModal('txModal')">关闭</button></div>
- <div class="type-tabs" style="margin-top:14px"><button id="tabExpense" onclick="setTxType('expense')">支出</button><button id="tabIncome" onclick="setTxType('income')">收入</button><button id="tabTransfer" onclick="setTxType('transfer')">转账 / 换汇</button></div>
- <input id="editTxId" type="hidden"><div id="normalFields"><label>金额</label><input id="txAmount" type="number" step="0.01" min="0.01" inputmode="decimal" placeholder="0.00"><label>币种</label><select id="txCurrency" onchange="syncTxAccountToCurrency()"></select><label>账户</label><select id="txAccount"></select><label>分类</label><select id="txCategory"></select></div>
- <div id="transferFields" class="hidden"><label>转出金额</label><input id="trFromAmount" type="number" step="0.01" min="0.01" inputmode="decimal"><label>转出账户</label><select id="trFrom" onchange="syncTransferCurrency()"></select><label>转入金额</label><input id="trToAmount" type="number" step="0.01" min="0.01" inputmode="decimal"><label>转入账户</label><select id="trTo" onchange="syncTransferCurrency()"></select><div class="mini" style="margin-top:10px"><div class="row"><span class="muted">换汇比率（转入 / 转出）</span><button class="secondary" type="button" onclick="applyDefaultFX()">使用当前汇率</button></div><b id="trRateText">—</b></div></div>
- <label>日期</label><input id="txDate" type="date"><label>时间</label><input id="txTime" type="time" step="60"><label>备注</label><input id="txNote" placeholder="例如：午饭、房租、家里转账"><div class="actions"><button class="secondary" onclick="closeModal('txModal')">取消</button><button class="primary" onclick="saveTx()">保存</button></div>
- </div></div>
-
-<div class="modal" id="accModal"><div class="sheet form"><div class="row"><h2 id="accTitle">添加账户</h2><button class="secondary" onclick="closeModal('accModal')">关闭</button></div><input id="editAccId" type="hidden"><label>账户名称</label><input id="accName" placeholder="例如：Сбербанк / 微信 / 现金"><label>账户类型</label><select id="accType"><option value="bank">银行</option><option value="wallet">电子钱包</option><option value="cash">现金</option><option value="card">银行卡 / 信用卡</option><option value="other">其他</option></select><label>币种</label><select id="accCurrency"><option value="RUB">🇷🇺 RUB 卢布</option><option value="CNY">🇨🇳 CNY 人民币</option></select><label>初始余额</label><input id="accBalance" type="number" step="0.01" inputmode="decimal" value="0"><div class="row" style="margin-top:12px"><div><b>允许负余额</b><div class="muted">信用卡/透支账户可开启</div></div><label class="switch"><input id="accAllowNegative" type="checkbox"><span></span></label></div><div class="actions"><button class="secondary" onclick="closeModal('accModal')">取消</button><button class="primary" onclick="saveAccount()">保存</button></div></div></div>
-
-<div class="modal" id="categoryModal"><div class="sheet form"><div class="row"><h2>管理分类</h2><button class="secondary" onclick="closeModal('categoryModal')">关闭</button></div><div id="categoryList" style="margin-top:10px"></div><div class="actions"><button class="secondary" onclick="addCategory()">＋新增分类</button><button class="primary" onclick="closeModal('categoryModal')">完成</button></div></div></div>
-
-<div class="modal" id="settingsModal"><div class="sheet form"><div class="row"><h2>设置</h2><button class="secondary" onclick="closeModal('settingsModal')">关闭</button></div><p class="muted">这里也可以从“统计”页面进入完整设置。</p><div class="actions"><button class="primary" onclick="closeModal('settingsModal');showPage('settings')">打开设置</button></div></div></div>
-
-<script>
 const KEY='my_ledger_data_v3', LEGACY_KEYS=['my_ledger_data_v2','my_ledger_v2','my_ledger_v1','my_ledger_backup_v2','my_ledger_backup_v1'], BACKUP_KEY='my_ledger_backup_v3', IDB_NAME='my_ledger_storage', IDB_STORE='snapshots', VERSION=2.8;
 let storageMeta={revision:0,savedAt:0,writerId:(crypto?.randomUUID?crypto.randomUUID():String(Date.now())+'-'+Math.random())};
 const ALLOWED_CURRENCIES=['CNY','RUB'];
@@ -244,6 +148,7 @@ function sortTxChronologically(txs){return [...txs].sort((a,b)=>txSortKey(a).loc
 function validateAccountTimeline(scopeIds=null,txs=db.tx){const scope=scopeIds?new Set([...scopeIds].map(Number)):null;const balances={};for(const a of db.accounts)balances[a.id]=Number(a.initial)||0;for(const t of sortTxChronologically(txs)){if(t.type==='income'){balances[t.account]=(balances[t.account]||0)+Number(t.amount||0);const a=accBy(t.account);if(a&&(!scope||scope.has(Number(a.id)))&&!a.allowNegative&&(balances[a.id]||0)<-0.000001)return `账户“${a.name}”在 ${t.date} 后出现负余额 ${fmt(balances[a.id],a.currency)}。`;}else if(t.type==='expense'){balances[t.account]=(balances[t.account]||0)-Number(t.amount||0);const a=accBy(t.account);if(a&&(!scope||scope.has(Number(a.id)))&&!a.allowNegative&&(balances[a.id]||0)<-0.000001)return `账户“${a.name}”在 ${t.date} 后余额不足（${fmt(balances[a.id],a.currency)}）。`;}else if(t.type==='transfer'){balances[t.from]=(balances[t.from]||0)-Number(t.fromAmount||t.amount||0);balances[t.to]=(balances[t.to]||0)+Number(t.toAmount||t.amount||0);const fa=accBy(t.from),ta=accBy(t.to);if(fa&&(!scope||scope.has(Number(fa.id)))&&!fa.allowNegative&&(balances[fa.id]||0)<-0.000001)return `账户“${fa.name}”在 ${t.date} 转出后余额不足（${fmt(balances[fa.id],fa.currency)}）。`;if(ta&&(!scope||scope.has(Number(ta.id)))&&!ta.allowNegative&&(balances[ta.id]||0)<-0.000001)return `账户“${ta.name}”在 ${t.date} 转入后出现异常负余额（${fmt(balances[ta.id],ta.currency)}）。`;}}return ''}
 function touchedAccounts(t){const s=new Set();if(!t)return s;if(t.type==='transfer'){s.add(Number(t.from));s.add(Number(t.to))}else if(t.account!=null)s.add(Number(t.account));return s}
 function validateBalances(nextRecord,replaceId=0){const txs=db.tx.filter(t=>Number(t.id)!==Number(replaceId));const old=db.tx.find(t=>Number(t.id)===Number(replaceId));txs.push(nextRecord);return validateAccountTimeline(new Set([...touchedAccounts(nextRecord),...touchedAccounts(old)]),txs)}
+function validateBalances(nextRecord,replaceId=0){const txs=db.tx.filter(t=>Number(t.id)!==Number(replaceId));txs.push(nextRecord);const original=db.tx;db.tx=txs;const err=validateAccountTimeline();db.tx=original;return err}
 function rateForDate(date){const d=normalizeDate(date)||localDate();const hist=[...db.fxHistory].filter(h=>normalizeDate(h.date)&&Number(h.rate)>0).sort((a,b)=>a.date.localeCompare(b.date));let chosen=null;for(const h of hist){if(h.date<=d)chosen=h;else break}return Number(chosen?.rate)||Number(db.rate)||11}
 function applyDefaultFX(){const f=accBy(document.getElementById('trFrom').value),to=accBy(document.getElementById('trTo').value),a=Number(document.getElementById('trFromAmount').value||0),d=document.getElementById('txDate').value,rate=rateForDate(d);if(!f||!to||!(a>0))return toast('先选择账户并填写转出金额');if(f.currency===to.currency){document.getElementById('trToAmount').value=a}else if(f.currency==='CNY'&&to.currency==='RUB'){document.getElementById('trToAmount').value=(a*rate).toFixed(2)}else if(f.currency==='RUB'&&to.currency==='CNY'){document.getElementById('trToAmount').value=(a/rate).toFixed(2)}updateTransferRateText();toast(`已按 ${d||'今天'} 历史汇率计算`)}
 function saveTx(){const editId=Number(document.getElementById('editTxId').value||0),type=currentTxType,date=document.getElementById('txDate').value,time=document.getElementById('txTime').value||'12:00',note=document.getElementById('txNote').value.trim();if(!isValidLedgerDate(date))return toast('日期无效');if(db.ledgerStartDate&&date<db.ledgerStartDate&&db.tx.length>0)return toast(`账单日期不能早于账本开始日期 ${db.ledgerStartDate}`);const old=editId?db.tx.find(t=>Number(t.id)===editId):null;let obj;if(type==='transfer'){const from=Number(document.getElementById('trFrom').value),to=Number(document.getElementById('trTo').value),fromA=Number(document.getElementById('trFromAmount').value),toA=Number(document.getElementById('trToAmount').value),fa=accBy(from),ta=accBy(to);if(!fa||!ta||from===to)return toast('请选择两个不同账户');if(!(fromA>0&&toA>0))return toast('请输入转出和转入金额');if(fa.currency===ta.currency&&Math.abs(fromA-toA)>0.000001)return toast('相同币种转账的转入金额必须等于转出金额');obj={type,from,to,fromCurrency:fa.currency,toCurrency:ta.currency,fromAmount:fromA,toAmount:toA,amount:fromA,currency:fa.currency,date,note,occurredAt:`${date}T${time}`};}else{const amount=Number(document.getElementById('txAmount').value),account=Number(document.getElementById('txAccount').value),currency=document.getElementById('txCurrency').value,category=document.getElementById('txCategory').value;const a=accBy(account);if(!(amount>0))return toast('金额必须大于 0');if(!a||a.currency!==currency)return toast('账户与币种不匹配');const fxRate=currency==='CNY'?1:(old&&old.type!=='transfer'&&old.currency===currency&&Number(old.fxRate)>0?Number(old.fxRate):rateForDate(date));obj={type,amount,currency,account,category,date,note,fxRate,occurredAt:`${date}T${time}`};}const record={id:editId||nextId(db.tx),createdAt:old?.createdAt||Date.now(),...obj};const balanceErr=validateBalances(record,editId);if(balanceErr)return toast(balanceErr);const ok=safeCommit(()=>{if(editId){const idx=db.tx.findIndex(t=>Number(t.id)===editId);if(idx<0)throw new Error('账单不存在');db.tx[idx]=record}else{db.tx.push(record);if(db.tx.length===1||!db.ledgerStartDate||record.date<db.ledgerStartDate)db.ledgerStartDate=record.date}},'账单已保存');if(ok){closeModal('txModal');requestAnimationFrame(render)}}
@@ -277,6 +182,3 @@ function init(){document.getElementById('today').textContent=new Date().toLocale
 init();
 recoverBestLocalBackup();
 setTimeout(()=>{const integrityIssue=validateAccountTimeline();if(integrityIssue)toast('数据检查提示：'+integrityIssue)},700);
-</script>
-</body>
-</html>
