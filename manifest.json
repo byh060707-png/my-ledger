@@ -1,6 +1,6 @@
 {
-  "name":"我的记账本",
-  "short_name":"记账本",
+  "name":"我的多币种记账本",
+  "short_name":"多币种账本",
   "start_url":"./",
   "scope":"./",
   "display":"standalone",
